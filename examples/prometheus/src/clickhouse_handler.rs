@@ -46,10 +46,10 @@ pub struct BackpressureConfig {
 impl Default for BackpressureConfig {
     fn default() -> Self {
         Self {
-            max_queue_size: 200_000,     // Large queue for high throughput
-            batch_size: 2000,            // Larger batches for efficiency
-            max_batch_delay: Duration::from_millis(50), // Fast flush for low latency
-            max_concurrent_inserts: 8,   // More concurrent inserts
+            max_queue_size: 1_000_000,   // Much larger queue for burst handling
+            batch_size: 10_000,          // Larger batches to reduce overhead
+            max_batch_delay: Duration::from_millis(100), // Slightly longer to accumulate bigger batches
+            max_concurrent_inserts: 16,  // More parallelism
         }
     }
 }
@@ -91,14 +91,12 @@ impl ClickHouseAsyncHandler {
             .with_password(&password)
             .with_database(database)
             .with_option("async_insert", "1")
-            .with_option("wait_for_async_insert", "0")
-            .with_option("async_insert_busy_timeout_ms", "25")
-            .with_option("async_insert_max_data_size", "2097152") // 2MB batches
-            .with_option("async_insert_max_query_number", "200")
-            .with_option("max_insert_threads", "16")
-            .with_option("max_insert_block_size", "2000000")
-            .with_option("insert_quorum", "0") // Fastest writes
-            .with_option("insert_quorum_timeout", "0");
+            .with_option("wait_for_async_insert", "0")  // Critical: don't wait
+            .with_option("async_insert_busy_timeout_ms", "200") // Longer batching
+            .with_option("async_insert_max_data_size", "10485760") // 10MB batches
+            .with_option("async_insert_max_query_number", "1000") // More queries per batch
+            .with_option("max_insert_threads", "32")  // More insert threads
+            .with_option("max_insert_block_size", "10000000"); // Larger blocks
 
         Self {
             client,

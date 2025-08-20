@@ -3,11 +3,13 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::str::FromStr;
+use spl_pod::solana_program::example_mocks::solana_account;
+use spl_token::solana_program;
 use spl_token::solana_program::pubkey::Pubkey;
 use yellowstone_grpc_proto::prelude::TransactionStatusMeta;
 use yellowstone_vixen_core::{instruction::InstructionUpdate, TransactionUpdate, Parser, Prefilter, ParseResult, ParseError};
 use crate::helpers::resolved_accounts_as_strings;
-
+// ComputeBudget111111111111111111111111111111
 #[derive(Debug, Clone)]
 pub struct AccountStats {
     pub block_slot: u64,
@@ -26,6 +28,7 @@ pub struct TokenBalanceOutput {
 
 #[derive(Debug, Clone, Copy)]
 pub struct TokenHoldingParser;
+const COMPUTE_BUDGET_PROGRAM_ID: Pubkey = Pubkey::from_str_const("ComputeBudget111111111111111111111111111111s");
 
 impl Parser for TokenHoldingParser {
     type Input = TransactionUpdate;
@@ -36,8 +39,20 @@ impl Parser for TokenHoldingParser {
     }
 
     fn prefilter(&self) -> Prefilter {
+        // Prefilter::builder()
+        //     .transaction_accounts([])
+        //     .build()
+        //     .unwrap()
         Prefilter::builder()
-            .transaction_accounts([spl_token_2022::ID])
+            .transaction_accounts_include([
+                solana_program::system_program::ID,
+                // spl_token::ID,
+                // spl_token_2022::ID,
+            COMPUTE_BUDGET_PROGRAM_ID,
+                solana_program::sysvar::ID,
+                solana_program::bpf_loader::ID
+            ])
+
             .build()
             .unwrap()
     }
@@ -232,25 +247,22 @@ impl TokenHoldingParser {
 
             let pre_balance = pre_balances.get(&index).copied().unwrap_or(0);
 
-            // Only include if there's a balance change
-            if pre_balance != post_balance {
-                let key = (account.clone(), "SOL".to_string());
+            let key = (account.clone(), "SOL".to_string());
 
-                //tracing::debug!("SOL balance change: account={}, pre={}, post={}", account, pre_balance, post_balance);
+            //tracing::debug!("SOL balance change: account={}, pre={}, post={}", account, pre_balance, post_balance);
 
-                latest_stats
-                    .entry(key)
-                    .and_modify(|stats| stats.post_balance = post_balance as f64)
-                    .or_insert_with(|| AccountStats {
-                        block_slot,
-                        token_account: account.clone(),
-                        owner: account.clone(), // For SOL, the account is its own owner
-                        mint: "SOL".to_string(),
-                        post_balance: post_balance as f64,
-                        signature: signature.to_string(),
-                        is_off_curve: false,
-                    });
-            }
+            latest_stats
+                .entry(key)
+                .and_modify(|stats| stats.post_balance = post_balance as f64)
+                .or_insert_with(|| AccountStats {
+                    block_slot,
+                    token_account: account.clone(),
+                    owner: account.clone(), // For SOL, the account is its own owner
+                    mint: "SOL".to_string(),
+                    post_balance: post_balance as f64,
+                    signature: signature.to_string(),
+                    is_off_curve: false,
+                });
         }
     }
 }

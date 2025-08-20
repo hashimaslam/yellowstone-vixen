@@ -16,7 +16,7 @@ use clap::Parser;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use yellowstone_vixen as vixen;
-use yellowstone_vixen::Pipeline;
+use yellowstone_vixen::{CommitmentLevel, Pipeline};
 use yellowstone_vixen_parser::token_holders::TokenHoldingParser;
 use yellowstone_vixen_yellowstone_grpc_source::YellowstoneGrpcSource;
 
@@ -90,6 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     vixen::Runtime::builder()
         .transaction(Pipeline::new(TokenHoldingParser, [ch]))
         .source(YellowstoneGrpcSource::new())
+        .commitment_level(CommitmentLevel::Processed)
         .build(cfg)
         .run();
 
