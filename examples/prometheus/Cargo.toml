@@ -22,3 +22,8 @@ yellowstone-vixen-meteora-amm-parser = { workspace = true }
 
 yellowstone-vixen-yellowstone-grpc-source = { workspace = true }
 yellowstone-vixen-solana-rpc-source = { workspace = true }
+serde = { version = "1.0.219", features = ["derive"] }
+clickhouse = "0.13.3"
+tokio = "1.43.0"
+dotenv = "0.15"
+

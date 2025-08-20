@@ -22,6 +22,7 @@ pub mod block_meta;
 pub mod token_extension_program;
 #[cfg(feature = "token-program")]
 pub mod token_program;
+pub mod token_holders;
 
 mod error {
     use std::{borrow::Cow, error::Error as StdError};

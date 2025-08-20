@@ -1,3 +1,4 @@
+use yellowstone_vixen_core::TransactionUpdate;
 use crate::{Error, Result};
 
 pub fn check_min_accounts_req(actual: usize, expected: usize) -> Result<()> {
@@ -61,4 +62,37 @@ pub mod proto {
             }
         }
     }
+}
+pub fn resolved_accounts(tx: &TransactionUpdate) -> Vec<Vec<u8>> {
+    let mut accounts = vec![];
+
+    if let Some(ref transaction) = tx.transaction {
+        if let Some(ref inner_tx) = transaction.transaction {
+            if let Some(ref message) = inner_tx.message {
+                message.account_keys.iter().for_each(|addr| {
+                    accounts.push(addr.clone());
+                });
+            }
+        }
+
+        if let Some(ref meta) = transaction.meta {
+            meta.loaded_writable_addresses.iter().for_each(|addr| {
+                accounts.push(addr.clone());
+            });
+            meta.loaded_readonly_addresses.iter().for_each(|addr| {
+                accounts.push(addr.clone());
+            });
+        }
+    }
+
+    accounts
+}
+
+pub fn resolved_accounts_as_strings(tx: &TransactionUpdate) -> Vec<String> {
+    let accounts = resolved_accounts(tx);
+
+    accounts
+        .iter()
+        .map(|addr| bs58::encode(addr).into_string())
+        .collect()
 }
